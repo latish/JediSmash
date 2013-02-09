@@ -9,7 +9,7 @@
         <Style TargetType="Image" x:Key="HulkImage">
             <Setter Property="Visibility" Value="{Binding HulkMode, Converter={StaticResource BooleanToVisibility}}"/>
         </Style>
-        <Storyboard x:Key="Smash" RepeatBehavior="0:0:6">
+        <Storyboard x:Key="Smash" RepeatBehavior="0:0:2.1">
             <DoubleAnimation From="0" To="3" Duration="0:0:0.1" Storyboard.TargetName="ColorStream" 
                 Storyboard.TargetProperty="(Image.RenderTransform).(RotateTransform.Angle)" />
             <DoubleAnimation From="3" To="-3" Duration="0:0:0.1" Storyboard.TargetName="ColorStream" 

@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Linq;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Microsoft.Kinect;
 
 namespace Kinect9.JediSmash
@@ -21,9 +22,9 @@ namespace Kinect9.JediSmash
 		private int _player1Strength, _player2Strength, _player1Wins, _player2Wins;
 		private DateTime _player1HitTime, _player2HitTime;
 		private bool _gameMode, _hulkMode;
-		private KinectAudioSource _kinectAudioSource;
 		private SpeechRecognizer _speechRecognizer;
 		private readonly List<String> _phrases = new List<string> { "hulk", "smash" };
+		private DispatcherTimer _smashAnimationTimer;
 
 		public int Player1Strength
 		{
@@ -108,6 +109,8 @@ namespace Kinect9.JediSmash
 
 			_speechRecognizer = new SpeechRecognizer(_phrases);
 			_speechRecognizer.SpeechRecognized += SpeechRecognized;
+			_smashAnimationTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 3) };
+			_smashAnimationTimer.Tick += PlaySmashAnimation;
 			_previousSabre1PositionX = new List<double>();
 			_previousSabre2PositionX = new List<double>();
 			ResetPlayerStrength();
@@ -116,9 +119,16 @@ namespace Kinect9.JediSmash
 			HulkMode = false;
 
 			_kinectSensor.Start();
-			_kinectAudioSource = _kinectSensor.AudioSource;
-			_kinectAudioSource.Start();
+			_kinectSensor.AudioSource.Start();
 			Message = "Kinect connected";
+		}
+
+		void PlaySmashAnimation(object sender, EventArgs e)
+		{
+			var storyboard = (Storyboard)FindResource("Smash");
+			storyboard.Begin();
+			Player2Strength = 1;
+            _smashAnimationTimer.Stop();
 		}
 
 		void SpeechRecognized(string speech)
@@ -129,8 +139,8 @@ namespace Kinect9.JediSmash
 					HulkMode = true;
 					break;
 				case "smash":
-                    if(HulkMode)
-                        HulkSmash();
+					if (HulkMode)
+						HulkSmash();
 					break;
 			}
 		}
@@ -141,9 +151,7 @@ namespace Kinect9.JediSmash
 			{
 				var soundPlayer = new SoundPlayer(@"Resources\smash.wav");
 				soundPlayer.Play();
-				var storyboard = (Storyboard)FindResource("Smash");
-				storyboard.Begin();
-				Player2Strength = 1;
+                _smashAnimationTimer.Start();
 			}
 		}
 
@@ -307,7 +315,7 @@ namespace Kinect9.JediSmash
 			previousPositions.Add(sabre.X2);
 		}
 
-		private void PlaySabreSound(List<double> previousPositions)
+		private static void PlaySabreSound(List<double> previousPositions)
 		{
 			var soundPlayer = new SoundPlayer(@"Resources\lightsabre.wav");
 			soundPlayer.Play();

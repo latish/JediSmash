@@ -94,6 +94,9 @@ namespace Kinect9.JediSmash
 		{
 			if (_kinectSensor == null)
 				return;
+
+            if(_kinectSensor.AudioSource!=null)
+                _kinectSensor.AudioSource.Stop();
 			if (_kinectSensor.IsRunning)
 				_kinectSensor.Stop();
 			_kinectSensor.AllFramesReady -= KinectSensorAllFramesReady;
