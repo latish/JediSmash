@@ -34,7 +34,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Kinect.Toolbox">
+      <HintPath>packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.dll</HintPath>
+    </Reference>
+    <Reference Include="Kinect.Toolbox.Voice">
+      <HintPath>packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.Voice.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Kinect, Version=1.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Kinect.Toolkit.FaceTracking">
+      <HintPath>packages\KinectToolbox.1.2.1.1\lib\Microsoft.Kinect.Toolkit.FaceTracking.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Speech, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
@@ -57,8 +66,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FightingHand.cs" />
     <Compile Include="INotifyPropertyChangedHelper.cs" />
-    <Compile Include="MainWindow.LightSaber.cs" />
+    <Compile Include="MainWindow.JediSmash.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
@@ -79,6 +89,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -95,12 +106,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Utility\Utility.csproj">
-      <Project>{B5A3E944-9162-4ED9-B9CC-116C4CCEC54C}</Project>
-      <Name>Utility</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="FaceTrackLib.dll" />
     <Content Include="Resources\clash.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

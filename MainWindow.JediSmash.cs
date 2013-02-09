@@ -9,7 +9,6 @@ using System.Windows.Media.Imaging;
 using System.Linq;
 using System.Windows.Shapes;
 using Microsoft.Kinect;
-using Microsoft.Speech.Recognition;
 
 namespace Kinect9.JediSmash
 {
@@ -23,7 +22,8 @@ namespace Kinect9.JediSmash
 		private DateTime _player1HitTime, _player2HitTime;
 		private bool _gameMode, _hulkMode;
 		private KinectAudioSource _kinectAudioSource;
-		private SpeechRecognitionEngine _speechRecognizer;
+		private SpeechRecognizer _speechRecognizer;
+		private readonly List<String> _phrases = new List<string> { "hulk", "smash" };
 
 		public int Player1Strength
 		{
@@ -105,10 +105,9 @@ namespace Kinect9.JediSmash
 																	Prediction = 0.5f,
 																	Smoothing = 0.5f
 																});
-			_speechRecognizer = CreateSpeechRecognizer();
-			_speechRecognizer.SetInputToDefaultAudioDevice();
-			_speechRecognizer.RecognizeAsync(RecognizeMode.Multiple);
 
+			_speechRecognizer = new SpeechRecognizer(_phrases);
+			_speechRecognizer.SpeechRecognized += SpeechRecognized;
 			_previousSabre1PositionX = new List<double>();
 			_previousSabre2PositionX = new List<double>();
 			ResetPlayerStrength();
@@ -122,39 +121,16 @@ namespace Kinect9.JediSmash
 			Message = "Kinect connected";
 		}
 
-		private SpeechRecognitionEngine CreateSpeechRecognizer()
+		void SpeechRecognized(string speech)
 		{
-			var recognizerInfo = GetKinectRecognizer();
-
-			var speechRecognitionEngine = new SpeechRecognitionEngine(recognizerInfo.Id);
-
-			var grammar = new Choices();
-			grammar.Add("hulk");
-			grammar.Add("smash");
-
-			var gb = new GrammarBuilder { Culture = recognizerInfo.Culture };
-			gb.Append(grammar);
-
-			var g = new Grammar(gb);
-
-			speechRecognitionEngine.LoadGrammar(g);
-			speechRecognitionEngine.SpeechRecognized += SreSpeechRecognized;
-
-			return speechRecognitionEngine;
-		}
-
-		private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
-		{
-			if (e.Result.Confidence < 0.6)
-				return;
-
-			switch (e.Result.Text.ToUpperInvariant())
+			switch (speech)
 			{
-				case "HULK":
+				case "hulk":
 					HulkMode = true;
 					break;
-				case "SMASH":
-					HulkSmash();
+				case "smash":
+                    if(HulkMode)
+                        HulkSmash();
 					break;
 			}
 		}
@@ -169,17 +145,6 @@ namespace Kinect9.JediSmash
 				storyboard.Begin();
 				Player2Strength = 1;
 			}
-		}
-
-		private static RecognizerInfo GetKinectRecognizer()
-		{
-			Func<RecognizerInfo, bool> matchingFunc = r =>
-			{
-				string value;
-				r.AdditionalInfo.TryGetValue("Kinect", out value);
-				return "True".Equals(value, StringComparison.InvariantCultureIgnoreCase) && "en-US".Equals(r.Culture.Name, StringComparison.InvariantCultureIgnoreCase);
-			};
-			return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
 		}
 
 		void KinectSensorAllFramesReady(object sender, AllFramesReadyEventArgs e)
@@ -217,7 +182,7 @@ namespace Kinect9.JediSmash
 				return;
 
 			//Assumptions: Player 1 on left side of screen with saber in right hand, Player 2 on right side of screen with saber in left hand
-			trackedSkeleton =trackedSkeleton.OrderBy(s => s.Joints[JointType.Spine].Position.X).ToList();
+			trackedSkeleton = trackedSkeleton.OrderBy(s => s.Joints[JointType.Spine].Position.X).ToList();
 
 			DrawSaber(trackedSkeleton[0], Sabre1, FightingHand.Right, HulkMode);
 			GameMode = false;
@@ -412,11 +377,5 @@ namespace Kinect9.JediSmash
 				ResetPlayerStrength();
 			}
 		}
-	}
-
-	enum FightingHand
-	{
-		Left,
-		Right
 	}
 }
