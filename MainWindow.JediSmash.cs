@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Linq;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Kinect.Toolbox.Record;
 using Microsoft.Kinect;
 
 namespace Kinect9.JediSmash
@@ -25,6 +26,7 @@ namespace Kinect9.JediSmash
 		private SpeechRecognizer _speechRecognizer;
 		private readonly List<String> _phrases = new List<string> { "hulk", "smash" };
 		private DispatcherTimer _smashAnimationTimer;
+		private KinectReplay _replay;
 
 		public int Player1Strength
 		{
@@ -107,6 +109,17 @@ namespace Kinect9.JediSmash
 																	Smoothing = 0.5f
 																});
 
+			Setup();
+
+			_kinectSensor.Start();
+			_kinectSensor.AudioSource.Start();
+			Message = "Kinect connected";
+			KinectPresent = true;
+			//StoreCoordinateMapper();
+		}
+
+		private void Setup()
+		{
 			_speechRecognizer = new SpeechRecognizer(_phrases);
 			_speechRecognizer.SpeechRecognized += SpeechRecognized;
 			_smashAnimationTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 3) };
@@ -117,10 +130,6 @@ namespace Kinect9.JediSmash
 			Player1Wins = Player2Wins = 0;
 			GameMode = false;
 			HulkMode = false;
-
-			_kinectSensor.Start();
-			_kinectSensor.AudioSource.Start();
-			Message = "Kinect connected";
 		}
 
 		void PlaySmashAnimation(object sender, EventArgs e)
@@ -128,7 +137,7 @@ namespace Kinect9.JediSmash
 			var storyboard = (Storyboard)FindResource("Smash");
 			storyboard.Begin();
 			Player2Strength = 1;
-            _smashAnimationTimer.Stop();
+			_smashAnimationTimer.Stop();
 		}
 
 		void SpeechRecognized(string speech)
@@ -151,7 +160,7 @@ namespace Kinect9.JediSmash
 			{
 				var soundPlayer = new SoundPlayer(@"Resources\smash.wav");
 				soundPlayer.Play();
-                _smashAnimationTimer.Start();
+				_smashAnimationTimer.Start();
 			}
 		}
 
@@ -162,27 +171,26 @@ namespace Kinect9.JediSmash
 				if (frame == null)
 					return;
 
-				var pixelData = new byte[frame.PixelDataLength];
-				frame.CopyPixelDataTo(pixelData);
-				if (ImageSource == null)
-					ImageSource = new WriteableBitmap(frame.Width, frame.Height, 96, 96,
-							PixelFormats.Bgr32, null);
-
-				var stride = frame.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
-				//ImageSource = BitmapSource.Create(frame.Width, frame.Height, 96, 96, PixelFormats.Bgr32, null, pixelData, stride);
-				ImageSource.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixelData, stride, 0);
+				ProcessColorImageFrame(frame);
 			}
 
 			using (var frame = e.OpenSkeletonFrame())
 			{
 				if (frame == null)
 					return;
+				ProcessSkeletonFrame(frame);
 
-				if (_skeletons == null)
-					_skeletons = new Skeleton[frame.SkeletonArrayLength];
 
-				frame.CopySkeletonDataTo(_skeletons);
 			}
+
+
+		}
+
+		private void ProcessSkeletonFrame(ReplaySkeletonFrame skeletonFrame)
+		{
+			if (skeletonFrame == null)
+				return;
+			_skeletons = skeletonFrame.Skeletons;
 
 			var trackedSkeleton = _skeletons.Where(s => s.TrackingState == SkeletonTrackingState.Tracked).ToList();
 
@@ -194,13 +202,26 @@ namespace Kinect9.JediSmash
 
 			DrawSaber(trackedSkeleton[0], Sabre1, FightingHand.Right, HulkMode);
 			GameMode = false;
-			if (trackedSkeleton.Count > 1)
-			{
-				GameMode = true;
-				DrawSaber(trackedSkeleton[1], Sabre2, FightingHand.Left, false);
-				DetectSaberCollision();
-				DetectPlayerHit(trackedSkeleton[0], trackedSkeleton[1], Sabre1, Sabre2);
-			}
+
+			if (trackedSkeleton.Count <= 1) return;
+
+			GameMode = true;
+			DrawSaber(trackedSkeleton[1], Sabre2, FightingHand.Left, false);
+			DetectSaberCollision();
+			DetectPlayerHit(trackedSkeleton[0], trackedSkeleton[1], Sabre1, Sabre2);
+		}
+
+		private void ProcessColorImageFrame(ReplayColorImageFrame colorImageFrame)
+		{
+            if(colorImageFrame==null)
+                return;
+			var pixelData = new byte[colorImageFrame.PixelDataLength];
+			colorImageFrame.CopyPixelDataTo(pixelData);
+			if (ImageSource == null)
+				ImageSource = new WriteableBitmap(colorImageFrame.Width, colorImageFrame.Height, 96, 96, PixelFormats.Bgr32, null);
+
+			var stride = colorImageFrame.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
+			ImageSource.WritePixels(new Int32Rect(0, 0, colorImageFrame.Width, colorImageFrame.Height), pixelData, stride, 0);
 		}
 
 		private void DrawSaber(Skeleton skeleton, Line sabre, FightingHand fightingHand, bool inHulkMode)
@@ -228,7 +249,8 @@ namespace Kinect9.JediSmash
 				(jointHand.TrackingState == JointTrackingState.NotTracked))
 				return;
 
-			var mapper = new CoordinateMapper(_kinectSensor);
+
+			var mapper = GetCoordinateMapper();
 
 			var wrist = mapper.MapSkeletonPointToColorPoint(jointWrist.Position, ColorFormat);
 			var elbow = mapper.MapSkeletonPointToColorPoint(jointElbow.Position, ColorFormat);
@@ -274,7 +296,7 @@ namespace Kinect9.JediSmash
 
 			if (inHulkMode)
 			{
-				//alredy have player 1 right hand info
+				//already have player 1 right hand info, only player 1 can be hulk
 				Canvas.SetLeft(RightHandImage, hand.X - RightHandImage.ActualWidth / 2);
 				Canvas.SetTop(RightHandImage, hand.Y - RightHandImage.ActualHeight / 2);
 				var anticlockwiseAngle = 360 - handAngleInDegrees;
@@ -352,7 +374,7 @@ namespace Kinect9.JediSmash
 				|| player2Head.TrackingState == JointTrackingState.NotTracked || player2LeftShoulder.TrackingState == JointTrackingState.NotTracked)
 				return;
 
-			var coordinateMapper = new CoordinateMapper(_kinectSensor);
+			var coordinateMapper = GetCoordinateMapper();
 
 			//player 1 got hit
 			if (sabre2.X2 < coordinateMapper.MapSkeletonPointToColorPoint(player1RightShoulder.Position, ColorFormat).X
@@ -384,6 +406,11 @@ namespace Kinect9.JediSmash
 					Player2Wins++;
 				ResetPlayerStrength();
 			}
+		}
+
+		private CoordinateMapper GetCoordinateMapper()
+		{
+            return _kinectSensor != null ? new CoordinateMapper(_kinectSensor) : _replay.CoordinateMapper;
 		}
 	}
 }

@@ -19,6 +19,21 @@
         </Storyboard>
     </Window.Resources>
     <StackPanel>
+        <StackPanel Orientation="Horizontal" x:Name="ReplayPanel" >
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding KinectPresent}" Value="False">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBlock Text="{Binding ReplayFilePath}" />
+            <Button Content="Browse" Click="BrowseReplayFile"/>
+            <Button Content="Replay" Click="ReplayFile"/>
+        </StackPanel>
         <TextBlock Text="Jedi Smash" FontSize="30" HorizontalAlignment="Center"/>
         <TextBlock Text="{Binding Message}" FontSize="30" Foreground="Red" HorizontalAlignment="Center" x:Name="MessageTextBlock"/>
         <Canvas Height="480" Width="640" x:Name="SkeletonCanvas" >

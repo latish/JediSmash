@@ -1,9 +1,12 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Kinect.Toolbox.Record;
 using Microsoft.Kinect;
+using Microsoft.Win32;
 
 namespace Kinect9.JediSmash
 {
@@ -29,6 +32,19 @@ namespace Kinect9.JediSmash
 		}
 
 		private WriteableBitmap _imageSource;
+		private string _replayFilePath;
+		private bool _kinectPresent;
+
+		public bool KinectPresent
+		{
+			get { return _kinectPresent; }
+			set
+			{
+				if (value.Equals(_kinectPresent)) return;
+				_kinectPresent = value;
+				PropertyChanged.Raise(() => KinectPresent);
+			}
+		}
 
 		public WriteableBitmap ImageSource
 		{
@@ -41,6 +57,17 @@ namespace Kinect9.JediSmash
 			}
 		}
 
+		public string ReplayFilePath
+		{
+			get { return _replayFilePath; }
+			set
+			{
+				if (value.Equals(_replayFilePath)) return;
+				_replayFilePath = value;
+				PropertyChanged.Raise(() => ReplayFilePath);
+			}
+		}
+
 		private void MainWindowLoaded(object sender, RoutedEventArgs e)
 		{
 			try
@@ -49,7 +76,10 @@ namespace Kinect9.JediSmash
 
 				_kinectSensor = KinectSensor.KinectSensors.FirstOrDefault(sensor => sensor.Status == KinectStatus.Connected);
 				if (_kinectSensor == null)
+				{
 					Message = "No Kinect found on startup";
+					KinectPresent = false;
+				}
 				else
 					Initialize();
 			}
@@ -92,11 +122,12 @@ namespace Kinect9.JediSmash
 
 		private void Clean()
 		{
+			KinectPresent = false;
 			if (_kinectSensor == null)
 				return;
 
-            if(_kinectSensor.AudioSource!=null)
-                _kinectSensor.AudioSource.Stop();
+			if (_kinectSensor.AudioSource != null)
+				_kinectSensor.AudioSource.Stop();
 			if (_kinectSensor.IsRunning)
 				_kinectSensor.Stop();
 			_kinectSensor.AllFramesReady -= KinectSensorAllFramesReady;
@@ -110,6 +141,43 @@ namespace Kinect9.JediSmash
 		{
 			var handler = PropertyChanged;
 			if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		private void BrowseReplayFile(object sender, RoutedEventArgs e)
+		{
+			var openFileDialog = new OpenFileDialog { Title = "Select filename", Filter = "Replay files|*.replay" };
+
+			if (openFileDialog.ShowDialog() == true)
+				ReplayFilePath = openFileDialog.FileName;
+		}
+
+		private void ReplayFile(object sender, RoutedEventArgs e)
+		{
+			if (!File.Exists(ReplayFilePath)) return;
+			if (_replay != null)
+			{
+				_replay.AllFramesReady -= ReplayAllFramesReady;
+				_replay.Stop();
+			}
+            Setup();
+			Stream recordStream = File.OpenRead(ReplayFilePath);
+
+			_replay = new KinectReplay(recordStream);
+
+			_replay.AllFramesReady += ReplayAllFramesReady;
+
+			_replay.Start();
+		}
+
+		private void ReplayAllFramesReady(object sender, ReplayAllFramesReadyEventArgs replayAllFramesReadyEventArgs)
+		{
+			var colorImageFrame = replayAllFramesReadyEventArgs.AllFrames.ColorImageFrame;
+            if(colorImageFrame!=null)
+                ProcessColorImageFrame(colorImageFrame);
+
+			var skeletonFrame = replayAllFramesReadyEventArgs.AllFrames.SkeletonFrame;
+            if(skeletonFrame!=null)
+                ProcessSkeletonFrame(skeletonFrame);
 		}
 	}
 }
