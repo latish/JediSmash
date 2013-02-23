@@ -52,7 +52,6 @@ namespace Kinect9.JediSmash
 			}
 		}
 
-
 		public bool KinectPresent
 		{
 			get { return _kinectPresent; }
@@ -177,10 +176,10 @@ namespace Kinect9.JediSmash
 				_replay.ReplayFinished += CleanupReplay;
 				Setup(_replay.AudioFilePath);
 				_replay.Start();
-
+                IsReplaying = true;
 			}
-			IsReplaying = true;
 		}
+
 		private void CleanupReplay()
 		{
 			if (!IsReplaying) return;

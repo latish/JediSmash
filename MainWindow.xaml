@@ -19,18 +19,18 @@
         </Storyboard>
         <Style TargetType="Button" x:Key="ReplayButton">
             <Setter Property="Content" Value="Replay" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Width" Value="100" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsReplaying}" Value="True">
                     <Setter Property="Content" Value="Stop" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsRecording}" Value="True">
-                    <Setter Property="IsEnabled" Value="False" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
     <StackPanel>
-        <StackPanel Orientation="Horizontal" x:Name="ReplayPanel" >
+        <StackPanel Orientation="Horizontal" x:Name="ReplayPanel" HorizontalAlignment="Center">
             <StackPanel.Style>
                 <Style TargetType="StackPanel">
                     <Setter Property="Visibility" Value="Collapsed" />
@@ -42,7 +42,7 @@
                 </Style>
             </StackPanel.Style>
             <TextBlock Text="{Binding ReplayFilePath}" />
-            <Button Content="Replay" Style="{StaticResource ReplayButton}" Click="ReplayFile"/>
+            <Button Style="{StaticResource ReplayButton}" Click="ReplayFile"/>
         </StackPanel>
         <TextBlock Text="Jedi Smash" FontSize="30" HorizontalAlignment="Center"/>
         <TextBlock Text="{Binding Message}" FontSize="30" Foreground="Red" HorizontalAlignment="Center" x:Name="MessageTextBlock"/>
