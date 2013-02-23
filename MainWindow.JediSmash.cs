@@ -9,7 +9,8 @@ using System.Windows.Media.Imaging;
 using System.Linq;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using Kinect.Toolbox.Record;
+using Kinect.Replay.Replay.Color;
+using Kinect.Replay.Replay.Skeletons;
 using Microsoft.Kinect;
 
 namespace Kinect9.JediSmash
@@ -26,7 +27,7 @@ namespace Kinect9.JediSmash
 		private SpeechRecognizer _speechRecognizer;
 		private readonly List<String> _phrases = new List<string> { "hulk", "smash" };
 		private DispatcherTimer _smashAnimationTimer;
-		private KinectReplay _replay;
+		private Dictionary<DateTime, string> _speechQueue; 
 
 		public int Player1Strength
 		{
@@ -115,12 +116,12 @@ namespace Kinect9.JediSmash
 			_kinectSensor.AudioSource.Start();
 			Message = "Kinect connected";
 			KinectPresent = true;
-			//StoreCoordinateMapper();
 		}
 
-		private void Setup()
+		private void Setup(string wavFilePath = null)
 		{
-			_speechRecognizer = new SpeechRecognizer(_phrases);
+            _speechQueue = new Dictionary<DateTime, string>();
+			_speechRecognizer = new SpeechRecognizer(_phrases,wavFilePath);
 			_speechRecognizer.SpeechRecognized += SpeechRecognized;
 			_smashAnimationTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 3) };
 			_smashAnimationTimer.Tick += PlaySmashAnimation;
@@ -140,8 +141,14 @@ namespace Kinect9.JediSmash
 			_smashAnimationTimer.Stop();
 		}
 
-		void SpeechRecognized(string speech)
+		void SpeechRecognized(string speech, DateTime speechDateTime)
 		{
+            if(speechDateTime>DateTime.Now)
+            {
+	            _speechQueue.Add(speechDateTime,speech);
+                return;
+            }
+
 			switch (speech)
 			{
 				case "hulk":
@@ -179,11 +186,7 @@ namespace Kinect9.JediSmash
 				if (frame == null)
 					return;
 				ProcessSkeletonFrame(frame);
-
-
 			}
-
-
 		}
 
 		private void ProcessSkeletonFrame(ReplaySkeletonFrame skeletonFrame)

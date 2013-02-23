@@ -17,6 +17,17 @@
             <DoubleAnimation From="-3" To="0" Duration="0:0:0.1" Storyboard.TargetName="ColorStream" 
                 Storyboard.TargetProperty="(Image.RenderTransform).(RotateTransform.Angle)" BeginTime="0:0:0.2"/>
         </Storyboard>
+        <Style TargetType="Button" x:Key="ReplayButton">
+            <Setter Property="Content" Value="Replay" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsReplaying}" Value="True">
+                    <Setter Property="Content" Value="Stop" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                    <Setter Property="IsEnabled" Value="False" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <StackPanel>
         <StackPanel Orientation="Horizontal" x:Name="ReplayPanel" >
@@ -31,8 +42,7 @@
                 </Style>
             </StackPanel.Style>
             <TextBlock Text="{Binding ReplayFilePath}" />
-            <Button Content="Browse" Click="BrowseReplayFile"/>
-            <Button Content="Replay" Click="ReplayFile"/>
+            <Button Content="Replay" Style="{StaticResource ReplayButton}" Click="ReplayFile"/>
         </StackPanel>
         <TextBlock Text="Jedi Smash" FontSize="30" HorizontalAlignment="Center"/>
         <TextBlock Text="{Binding Message}" FontSize="30" Foreground="Red" HorizontalAlignment="Center" x:Name="MessageTextBlock"/>

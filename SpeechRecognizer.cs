@@ -9,16 +9,19 @@ namespace Kinect9.JediSmash
 	{
 		private readonly List<string> _phrases;
 		private readonly SpeechRecognitionEngine _speechRecognitionEngine;
-		public event Action<string> SpeechRecognized;
+		public event Action<string, DateTime> SpeechRecognized;
 
-		public SpeechRecognizer(List<String> phrases)
+		public SpeechRecognizer(List<string> phrases, string wavFilePath)
 		{
 			_phrases = phrases;
 			_speechRecognitionEngine = CreateSpeechRecognizer();
-			_speechRecognitionEngine.SetInputToDefaultAudioDevice();
+			if (string.IsNullOrEmpty(wavFilePath))
+				_speechRecognitionEngine.SetInputToDefaultAudioDevice();
+			else
+				_speechRecognitionEngine.SetInputToWaveFile(wavFilePath);
 			_speechRecognitionEngine.RecognizeAsync(RecognizeMode.Multiple);
-
 		}
+
 		private SpeechRecognitionEngine CreateSpeechRecognizer()
 		{
 			var recognizerInfo = GetKinectRecognizer();
@@ -40,11 +43,14 @@ namespace Kinect9.JediSmash
 
 		private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
 		{
-			if (e.Result.Confidence < 0.6)
+			if (e.Result.Confidence < 0.6 )
 				return;
 
+			var phraseDateTime = e.Result.Audio.StartTime.Add(e.Result.Audio.AudioPosition);
+
+
 			if (_phrases.Contains(e.Result.Text))
-				SpeechRecognized(e.Result.Text);
+				SpeechRecognized(e.Result.Text,phraseDateTime );
 		}
 
 		private static RecognizerInfo GetKinectRecognizer()

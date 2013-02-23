@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
+using System.Media;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using Kinect.Toolbox.Record;
+using Kinect.Replay.Record;
+using Kinect.Replay.Replay;
+using Kinect.Replay.Replay.Skeletons;
 using Microsoft.Kinect;
 using Microsoft.Win32;
 
@@ -13,7 +16,14 @@ namespace Kinect9.JediSmash
 	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
 		private KinectSensor _kinectSensor;
+		private WriteableBitmap _imageSource;
+		private string _replayFilePath;
+		private bool _kinectPresent;
+		private KinectReplay _replay;
+		private bool _isReplaying;
 		private string _message;
+		private SoundPlayer _soundPlayer;
+		private bool _startedAudio;
 
 		public MainWindow()
 		{
@@ -31,9 +41,17 @@ namespace Kinect9.JediSmash
 			}
 		}
 
-		private WriteableBitmap _imageSource;
-		private string _replayFilePath;
-		private bool _kinectPresent;
+		public bool IsReplaying
+		{
+			get { return _isReplaying; }
+			set
+			{
+				if (value.Equals(_isReplaying)) return;
+				_isReplaying = value;
+				PropertyChanged.Raise(() => IsReplaying);
+			}
+		}
+
 
 		public bool KinectPresent
 		{
@@ -143,41 +161,60 @@ namespace Kinect9.JediSmash
 			if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
 		}
 
-		private void BrowseReplayFile(object sender, RoutedEventArgs e)
+		private void ReplayFile(object sender, RoutedEventArgs e)
 		{
+			if (IsReplaying)
+			{
+				CleanupReplay();
+				return;
+			}
 			var openFileDialog = new OpenFileDialog { Title = "Select filename", Filter = "Replay files|*.replay" };
 
 			if (openFileDialog.ShowDialog() == true)
-				ReplayFilePath = openFileDialog.FileName;
-		}
-
-		private void ReplayFile(object sender, RoutedEventArgs e)
-		{
-			if (!File.Exists(ReplayFilePath)) return;
-			if (_replay != null)
 			{
-				_replay.AllFramesReady -= ReplayAllFramesReady;
-				_replay.Stop();
+				_replay = new KinectReplay(openFileDialog.FileName);
+				_replay.AllFramesReady += ReplayAllFramesReady;
+				_replay.ReplayFinished += CleanupReplay;
+				Setup(_replay.AudioFilePath);
+				_replay.Start();
+
 			}
-            Setup();
-			Stream recordStream = File.OpenRead(ReplayFilePath);
-
-			_replay = new KinectReplay(recordStream);
-
-			_replay.AllFramesReady += ReplayAllFramesReady;
-
-			_replay.Start();
+			IsReplaying = true;
+		}
+		private void CleanupReplay()
+		{
+			if (!IsReplaying) return;
+			if (_soundPlayer != null && _startedAudio)
+				_soundPlayer.Stop();
+			_replay.AllFramesReady -= ReplayAllFramesReady;
+			_replay.Stop();
+			_replay.Dispose();
+			_replay = null;
+			IsReplaying = false;
 		}
 
-		private void ReplayAllFramesReady(object sender, ReplayAllFramesReadyEventArgs replayAllFramesReadyEventArgs)
+		private void ReplayAllFramesReady(ReplayAllFramesReadyEventArgs replayAllFramesReadyEventArgs)
 		{
+			if ((_replay.Options & KinectRecordOptions.Audio) != 0 && !_startedAudio)
+			{
+				_soundPlayer = new SoundPlayer(_replay.AudioFilePath);
+				_soundPlayer.Play();
+				_startedAudio = true;
+			}
+			if (_speechQueue.Any(s => s.Key < DateTime.Now))
+			{
+				var speechReady = _speechQueue.FirstOrDefault(s => s.Key < DateTime.Now);
+				SpeechRecognized(speechReady.Value, speechReady.Key);
+				_speechQueue.Remove(speechReady.Key);
+			}
+
 			var colorImageFrame = replayAllFramesReadyEventArgs.AllFrames.ColorImageFrame;
-            if(colorImageFrame!=null)
-                ProcessColorImageFrame(colorImageFrame);
+			if (colorImageFrame != null)
+				ProcessColorImageFrame(colorImageFrame);
 
 			var skeletonFrame = replayAllFramesReadyEventArgs.AllFrames.SkeletonFrame;
-            if(skeletonFrame!=null)
-                ProcessSkeletonFrame(skeletonFrame);
+			if (skeletonFrame != null)
+				ProcessSkeletonFrame(skeletonFrame);
 		}
 	}
 }
