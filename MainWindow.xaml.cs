@@ -200,12 +200,7 @@ namespace Kinect9.JediSmash
 				_soundPlayer.Play();
 				_startedAudio = true;
 			}
-			if (_speechQueue.Any(s => s.Key < DateTime.Now))
-			{
-				var speechReady = _speechQueue.FirstOrDefault(s => s.Key < DateTime.Now);
-				SpeechRecognized(speechReady.Value, speechReady.Key);
-				_speechQueue.Remove(speechReady.Key);
-			}
+			ProcessSpeechCommands();
 
 			var colorImageFrame = replayAllFramesReadyEventArgs.AllFrames.ColorImageFrame;
 			if (colorImageFrame != null)
@@ -214,6 +209,15 @@ namespace Kinect9.JediSmash
 			var skeletonFrame = replayAllFramesReadyEventArgs.AllFrames.SkeletonFrame;
 			if (skeletonFrame != null)
 				ProcessSkeletonFrame(skeletonFrame);
+		}
+
+		private void ProcessSpeechCommands()
+		{
+			if (!_speechQueue.Any(s => s.Key < DateTime.Now)) return;
+
+			var speechReady = _speechQueue.FirstOrDefault(s => s.Key < DateTime.Now);
+			SpeechRecognized(speechReady.Value, speechReady.Key);
+			_speechQueue.Remove(speechReady.Key);
 		}
 	}
 }

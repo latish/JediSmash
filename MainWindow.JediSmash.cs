@@ -113,6 +113,7 @@ namespace Kinect9.JediSmash
 			Setup();
 
 			_kinectSensor.Start();
+            _kinectSensor.AudioSource.EchoCancellationMode = EchoCancellationMode.CancellationAndSuppression;
 			_kinectSensor.AudioSource.Start();
 			Message = "Kinect connected";
 			KinectPresent = true;
@@ -143,7 +144,7 @@ namespace Kinect9.JediSmash
 
 		void SpeechRecognized(string speech, DateTime speechDateTime)
 		{
-            if(speechDateTime>DateTime.Now)
+            if(_replay!=null && speechDateTime>DateTime.Now)
             {
 	            _speechQueue.Add(speechDateTime,speech);
                 return;

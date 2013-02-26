@@ -43,7 +43,7 @@ namespace Kinect9.JediSmash
 
 		private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
 		{
-			if (e.Result.Confidence < 0.6 )
+			if (e.Result.Confidence < 0.7 )
 				return;
 
 			var phraseDateTime = e.Result.Audio.StartTime.Add(e.Result.Audio.AudioPosition);
