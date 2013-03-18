@@ -16,7 +16,7 @@ namespace Kinect9.JediSmash
 	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
 		private KinectSensor _kinectSensor;
-		private WriteableBitmap _imageSource;
+		private WriteableBitmap _colorImageSource;
 		private string _replayFilePath;
 		private bool _kinectPresent;
 		private KinectReplay _replay;
@@ -24,6 +24,7 @@ namespace Kinect9.JediSmash
 		private string _message;
 		private SoundPlayer _soundPlayer;
 		private bool _startedAudio;
+		private WriteableBitmap _depthImageSource;
 
 		public MainWindow()
 		{
@@ -63,14 +64,25 @@ namespace Kinect9.JediSmash
 			}
 		}
 
-		public WriteableBitmap ImageSource
+		public WriteableBitmap ColorImageSource
 		{
-			get { return _imageSource; }
+			get { return _colorImageSource; }
 			set
 			{
-				if (value.Equals(_imageSource)) return;
-				_imageSource = value;
-				PropertyChanged.Raise(() => ImageSource);
+				if (value.Equals(_colorImageSource)) return;
+				_colorImageSource = value;
+				PropertyChanged.Raise(() => ColorImageSource);
+			}
+		}
+
+		public WriteableBitmap DepthImageSource
+		{
+			get { return _depthImageSource; }
+			set
+			{
+				if (value.Equals(_depthImageSource)) return;
+				_depthImageSource = value;
+				PropertyChanged.Raise(() => DepthImageSource);
 			}
 		}
 

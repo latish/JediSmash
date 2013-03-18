@@ -101,6 +101,7 @@ namespace Kinect9.JediSmash
 				return;
 			_kinectSensor.AllFramesReady += KinectSensorAllFramesReady;
 			_kinectSensor.ColorStream.Enable();
+			_kinectSensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
 			_kinectSensor.SkeletonStream.Enable(new TransformSmoothParameters
 																{
 																	Correction = 0.5f,
@@ -182,12 +183,59 @@ namespace Kinect9.JediSmash
 				ProcessColorImageFrame(frame);
 			}
 
+			using (var frame = e.OpenDepthImageFrame())
+			{
+				if(frame==null)
+                    return;
+				ProcessDepthImageFrame(frame);
+			}
+
 			using (var frame = e.OpenSkeletonFrame())
 			{
 				if (frame == null)
 					return;
 				ProcessSkeletonFrame(frame);
 			}
+		}
+
+		private void ProcessDepthImageFrame(DepthImageFrame frame)
+		{
+			var pixels = GetColoredBytes(frame);
+			if (DepthImageSource == null)
+				DepthImageSource = new WriteableBitmap(frame.Width, frame.Height, 96, 96,
+						PixelFormats.Bgra32, null);
+
+			var stride = frame.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
+			DepthImageSource.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixels, stride, 0);
+		}
+
+		byte[] GetColoredBytes(DepthImageFrame frame)
+		{
+			var depthData = new short[frame.PixelDataLength];
+			frame.CopyPixelDataTo(depthData);
+
+			var pixels = new byte[frame.Height * frame.Width * 4];
+
+			const int blueIndex = 0;
+			const int greenIndex = 1;
+			const int redIndex = 2;
+
+			for (int depthIndex = 0, colorIndex = 0;
+				 depthIndex < depthData.Length && colorIndex < pixels.Length;
+				 depthIndex++, colorIndex += 4)
+			{
+				var player = depthData[depthIndex] & DepthImageFrame.PlayerIndexBitmask;
+
+				var color = player == 1 ? Colors.Green : Colors.Transparent;
+				pixels[colorIndex + blueIndex] = color.B;
+				pixels[colorIndex + greenIndex] = color.G;
+				pixels[colorIndex + redIndex] = color.R;
+				if (player == 1)
+					pixels[colorIndex + redIndex + 1] = 150;
+				else
+					pixels[colorIndex + redIndex + 1] = Colors.Transparent.A;
+			}
+			return pixels;
 		}
 
 		private void ProcessSkeletonFrame(ReplaySkeletonFrame skeletonFrame)
@@ -221,11 +269,11 @@ namespace Kinect9.JediSmash
                 return;
 			var pixelData = new byte[colorImageFrame.PixelDataLength];
 			colorImageFrame.CopyPixelDataTo(pixelData);
-			if (ImageSource == null)
-				ImageSource = new WriteableBitmap(colorImageFrame.Width, colorImageFrame.Height, 96, 96, PixelFormats.Bgr32, null);
+			if (ColorImageSource == null)
+				ColorImageSource = new WriteableBitmap(colorImageFrame.Width, colorImageFrame.Height, 96, 96, PixelFormats.Bgr32, null);
 
 			var stride = colorImageFrame.Width * PixelFormats.Bgr32.BitsPerPixel / 8;
-			ImageSource.WritePixels(new Int32Rect(0, 0, colorImageFrame.Width, colorImageFrame.Height), pixelData, stride, 0);
+			ColorImageSource.WritePixels(new Int32Rect(0, 0, colorImageFrame.Width, colorImageFrame.Height), pixelData, stride, 0);
 		}
 
 		private void DrawSaber(Skeleton skeleton, Line sabre, FightingHand fightingHand, bool inHulkMode)

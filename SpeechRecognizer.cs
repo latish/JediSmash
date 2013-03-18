@@ -48,7 +48,6 @@ namespace Kinect9.JediSmash
 
 			var phraseDateTime = e.Result.Audio.StartTime.Add(e.Result.Audio.AudioPosition);
 
-
 			if (_phrases.Contains(e.Result.Text))
 				SpeechRecognized(e.Result.Text,phraseDateTime );
 		}

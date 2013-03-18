@@ -50,11 +50,12 @@
             <Canvas.LayoutTransform>
                 <ScaleTransform ScaleX="2" ScaleY="2"/>
             </Canvas.LayoutTransform>
-            <Image Height="480" Width="640" Source="{Binding ImageSource}" x:Name="ColorStream">
+            <Image Height="480" Width="640" Source="{Binding ColorImageSource}" x:Name="ColorStream">
                 <Image.RenderTransform>
                     <RotateTransform Angle="0" CenterX="320" CenterY="240"/>
                 </Image.RenderTransform>
             </Image>
+            <Image Height="480" Width="640" Source="{Binding DepthImageSource}" Style="{StaticResource HulkImage}"/>
             <Image Source="/Resources/head.png" x:Name="HeadImage" Style="{StaticResource HulkImage}" Width="110" Height="140"/>
             <Image Source="/Resources/rightHand.png" x:Name="RightHandImage" Style="{StaticResource HulkImage}" Width="110" Height="90"/>
             <!--Score-->
