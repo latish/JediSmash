@@ -10,6 +10,7 @@ using System.Linq;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Kinect.Replay.Replay.Color;
+using Kinect.Replay.Replay.Depth;
 using Kinect.Replay.Replay.Skeletons;
 using Microsoft.Kinect;
 
@@ -198,7 +199,7 @@ namespace Kinect9.JediSmash
 			}
 		}
 
-		private void ProcessDepthImageFrame(DepthImageFrame frame)
+		private void ProcessDepthImageFrame(ReplayDepthImageFrame frame)
 		{
 			var pixels = GetColoredBytes(frame);
 			if (DepthImageSource == null)
@@ -209,7 +210,7 @@ namespace Kinect9.JediSmash
 			DepthImageSource.WritePixels(new Int32Rect(0, 0, frame.Width, frame.Height), pixels, stride, 0);
 		}
 
-		byte[] GetColoredBytes(DepthImageFrame frame)
+		byte[] GetColoredBytes(ReplayDepthImageFrame frame)
 		{
 			var depthData = new short[frame.PixelDataLength];
 			frame.CopyPixelDataTo(depthData);

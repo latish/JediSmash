@@ -218,6 +218,10 @@ namespace Kinect9.JediSmash
 			if (colorImageFrame != null)
 				ProcessColorImageFrame(colorImageFrame);
 
+			var depthImageFrame = replayAllFramesReadyEventArgs.AllFrames.DepthImageFrame;
+            if(depthImageFrame!=null)
+                ProcessDepthImageFrame(depthImageFrame);
+
 			var skeletonFrame = replayAllFramesReadyEventArgs.AllFrames.SkeletonFrame;
 			if (skeletonFrame != null)
 				ProcessSkeletonFrame(skeletonFrame);
